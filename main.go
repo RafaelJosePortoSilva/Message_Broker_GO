@@ -1,9 +1,9 @@
 package main
 
 import (
-	_ "fmt"
+	"fmt"
 	"sync"
-	_ "time"
+	"time"
 )
 
 type Message struct {
@@ -58,4 +58,20 @@ func (b *Broker) Unsubscribe(topic string, subscriber *Subscriber) {
 
 	}
 
+}
+
+func (b *Broker) Publish(topic string, payload interface{}) {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+
+	if subscribers, found := b.subscribers[topic]; found {
+		for _, sub := range subscribers {
+			select {
+			case sub.Channel <- payload:
+			case <-time.After(time.Second):
+				fmt.Printf("Subscriber slow. Unsubscribing from topic: %s\n", topic)
+				b.Unsubscribe(topic, sub)
+			}
+		}
+	}
 }
