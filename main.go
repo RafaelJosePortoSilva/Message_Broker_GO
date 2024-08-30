@@ -40,3 +40,22 @@ func (b *Broker) Subscribe(topic string) *Subscriber {
 
 	return subscriber
 }
+
+func (b *Broker) Unsubscribe(topic string, subscriber *Subscriber) {
+
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+
+	if subscribers, found := b.subscribers[topic]; found {
+
+		for i, sub := range subscribers {
+			if sub == subscriber {
+				close(sub.Channel)
+				b.subscribers[topic] = append(subscribers[:i], subscribers[i+1:]...)
+				return
+			}
+		}
+
+	}
+
+}
